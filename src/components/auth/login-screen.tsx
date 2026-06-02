@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { PasswordLoginForm } from "@/components/auth/password-login-form";
 import { PinPad } from "@/components/auth/pin-pad";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { useRouter } from "@/intl/navigation";
 import { cn } from "@/lib/utils";
 
@@ -70,16 +69,12 @@ export function LoginScreen({ scope, className }: LoginScreenProps) {
   return (
     <main
       className={cn(
-        "mx-auto flex min-h-dvh w-full max-w-lg flex-col px-6 py-8",
+        "mx-auto flex min-h-0 w-full flex-1 flex-col px-6 py-8",
         scope === "admin" ? "max-w-[960px]" : "max-w-[720px]",
         className,
       )}
     >
       <div className="flex flex-col items-center gap-6">
-        <div className="flex w-full justify-end">
-          <LanguageSwitcher />
-        </div>
-
         <header className="flex flex-col items-center gap-1 text-center">
           <p className="text-sm font-medium uppercase tracking-widest text-salon-muted">
             {common("appName")}

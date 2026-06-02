@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
-import { type ReportRange, ReportsPanel, type ReportTab } from "@/components/admin/reports-panel";
+import { ReportsPanel, type ReportTab } from "@/components/admin/reports-panel";
 import { redirect } from "@/intl/navigation";
 import type { Locale } from "@/intl/routing";
 import { listActiveBranchesForSelect } from "@/lib/admin/queries";
@@ -10,17 +10,11 @@ type Props = {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{
     branch?: string;
-    range?: string;
     from?: string;
     to?: string;
     tab?: string;
   }>;
 };
-
-function parseRange(value: string | undefined): ReportRange {
-  if (value === "week" || value === "custom") return value;
-  return "today";
-}
 
 function parseTab(value: string | undefined): ReportTab {
   if (value === "revenue" || value === "expenses") return value;
@@ -33,19 +27,17 @@ export default async function AdminReportsPage({ params, searchParams }: Props) 
   setRequestLocale(locale);
 
   const t = await getTranslations("admin.reports");
-  const range = parseRange(query.range);
   const tab = parseTab(query.tab);
   const branchId = query.branch?.trim() || null;
-  const customFrom = query.from ?? "";
-  const customTo = query.to ?? "";
+  const from = query.from ?? "";
+  const to = query.to ?? "";
 
   const [branches, data] = await Promise.all([
     listActiveBranchesForSelect(),
     getReportData({
       branchId,
-      range,
-      customFrom: customFrom || undefined,
-      customTo: customTo || undefined,
+      from: from || undefined,
+      to: to || undefined,
     }),
   ]);
 
@@ -61,9 +53,8 @@ export default async function AdminReportsPage({ params, searchParams }: Props) 
         data={data}
         locale={locale as Locale}
         branchId={branchId}
-        range={range}
-        customFrom={customFrom}
-        customTo={customTo}
+        from={from}
+        to={to}
         tab={tab}
       />
     </AdminPageShell>

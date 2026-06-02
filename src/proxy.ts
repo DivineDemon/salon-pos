@@ -33,7 +33,11 @@ export default async function proxy(request: NextRequest) {
   const { locale, path } = parseLocalePath(request.nextUrl.pathname);
   const session = await getSessionFromRequest(request);
 
-  const isLoginPage = path === "/login" || path === "/admin/login";
+  if (path === "/login") {
+    return NextResponse.redirect(new URL(localizedPath(locale, "/"), request.url));
+  }
+
+  const isLoginPage = path === "/" || path === "/admin/login";
   const requiresEmployeeAuth = isEmployeeProtectedPath(path);
   const requiresAdminAuth = isAdminProtectedPath(path);
   const requiresAuth = requiresEmployeeAuth || requiresAdminAuth;

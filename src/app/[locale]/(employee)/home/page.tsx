@@ -2,8 +2,6 @@ import { eq } from "drizzle-orm";
 import { ChevronRight, MapPin, Receipt, Wallet } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
-import { LogoutButton } from "@/components/auth/logout-button";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { Link } from "@/intl/navigation";
 import type { Locale } from "@/intl/routing";
 import { getSession } from "@/lib/auth/session";
@@ -52,21 +50,15 @@ export default async function EmployeeHomePage({ params }: Props) {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col">
-      <div className="flex items-center justify-between px-5 pb-2 pt-3">
-        {branchName ? (
+    <main className="flex min-h-0 flex-1 flex-col">
+      {branchName ? (
+        <div className="px-5 pb-2 pt-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-salon-black px-3.5 py-2 text-sm font-semibold text-salon-cream">
             <MapPin className="size-3.5 text-salon-gold" aria-hidden />
             {branchName}
           </span>
-        ) : (
-          <span />
-        )}
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          <LogoutButton />
         </div>
-      </div>
+      ) : null}
 
       <div className="px-6 pb-4">
         <h1 className="font-display text-[26px] font-bold text-salon-black">

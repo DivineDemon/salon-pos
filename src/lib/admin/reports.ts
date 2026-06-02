@@ -1,9 +1,5 @@
 import { and, eq, gte, lte, sql } from "drizzle-orm";
-import {
-  type DateRange,
-  type ReportRangePreset,
-  resolveReportDateRange,
-} from "@/lib/admin/date-range";
+import { type DateRange, resolveReportDateRange } from "@/lib/admin/date-range";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { getDb } from "@/lib/db";
 import { employees, expenses, sales } from "@/lib/db/schema";
@@ -32,13 +28,12 @@ export type ReportData = {
 
 export async function getReportData(input: {
   branchId: string | null;
-  range: ReportRangePreset;
-  customFrom?: string;
-  customTo?: string;
+  from?: string;
+  to?: string;
 }): Promise<ReportData | null> {
   if (!(await requireAdmin())) return null;
 
-  const dateRange = resolveReportDateRange(input.range, input.customFrom, input.customTo);
+  const dateRange = resolveReportDateRange(input.from, input.to);
   const db = getDb();
 
   const salesConditions = [

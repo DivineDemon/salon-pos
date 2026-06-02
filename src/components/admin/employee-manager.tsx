@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useRouter } from "@/intl/navigation";
 import { createEmployee, translateAdminError, updateEmployee } from "@/lib/admin/actions";
 import type { AdminBranch, AdminEmployee } from "@/lib/admin/queries";
@@ -64,7 +65,7 @@ export function EmployeeManager({ employees, branches, locale }: EmployeeManager
       </ul>
 
       {mode.type !== "closed" ? (
-        <EmployeeFormSheet
+        <EmployeeFormDrawer
           mode={mode}
           branches={branches.filter((b) => b.isActive)}
           pending={pending}
@@ -114,7 +115,7 @@ type EmployeeFormValues = {
   resetPassword?: string;
 };
 
-function EmployeeFormSheet({
+function EmployeeFormDrawer({
   mode,
   branches,
   pending,
@@ -122,7 +123,7 @@ function EmployeeFormSheet({
   onClose,
   onSubmit,
 }: {
-  mode: FormMode;
+  mode: Exclude<FormMode, { type: "closed" }>;
   branches: AdminBranch[];
   pending: boolean;
   error: string | null;
@@ -157,158 +158,158 @@ function EmployeeFormSheet({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
-      >
-        <h2 className="font-display text-xl font-bold text-salon-black">
-          {isEdit ? t("editEmployee") : t("addEmployee")}
-        </h2>
+    <Drawer open onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent className="max-h-[90dvh] bg-white flex flex-col overflow-hidden data-[vaul-drawer-direction=bottom]:overflow-hidden">
+        <DrawerHeader className="px-6 pt-4 text-start shrink-0">
+          <DrawerTitle className="font-display text-xl font-bold text-salon-black">
+            {isEdit ? t("editEmployee") : t("addEmployee")}
+          </DrawerTitle>
+        </DrawerHeader>
 
-        <form
-          className="mt-4 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit(values);
-          }}
-        >
-          <Field label={t("name")}>
-            <input
-              className={inputClass}
-              value={values.name}
-              onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
-              required
-            />
-          </Field>
-
-          <Field label={t("branch")}>
-            <select
-              className={inputClass}
-              value={values.branchId}
-              onChange={(e) => setValues((v) => ({ ...v, branchId: e.target.value }))}
-              required
-            >
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.nameEn}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label={t("role")}>
-            <select
-              className={inputClass}
-              value={values.role}
-              onChange={(e) =>
-                setValues((v) => ({ ...v, role: e.target.value as "employee" | "admin" }))
-              }
-            >
-              <option value="employee">{t("roleEmployee")}</option>
-              <option value="admin">{t("roleAdmin")}</option>
-            </select>
-          </Field>
-
-          {!isEdit ? (
-            <div className="flex gap-2">
-              {(["pin", "password"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setValues((v) => ({ ...v, authType: type }))}
-                  className={cn(
-                    "min-h-11 flex-1 rounded-xl border text-sm font-medium transition-colors",
-                    values.authType === type
-                      ? "border-salon-gold bg-salon-gold/15 text-salon-black"
-                      : "border-salon-border bg-white text-salon-muted",
-                  )}
-                >
-                  {type === "pin" ? t("authPin") : t("authPassword")}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-salon-muted">
-              {values.authType === "pin" ? t("authPin") : t("authPassword")}
-            </p>
-          )}
-
-          {values.authType === "pin" ? (
-            <Field label={isEdit ? t("resetPin") : t("pin")}>
+        <div className="overflow-y-auto px-6 pb-6 flex-1 min-h-0">
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSubmit(values);
+            }}
+          >
+            <Field label={t("name")}>
               <input
                 className={inputClass}
-                inputMode="numeric"
-                pattern="\d{4,6}"
-                value={isEdit ? (values.resetPin ?? "") : (values.pin ?? "")}
-                onChange={(e) =>
-                  setValues((v) =>
-                    isEdit ? { ...v, resetPin: e.target.value } : { ...v, pin: e.target.value },
-                  )
-                }
-                required={!isEdit}
-                placeholder={isEdit ? t("resetPinHint") : undefined}
+                value={values.name}
+                onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
+                required
               />
             </Field>
-          ) : (
-            <>
-              <Field label={t("username")}>
+
+            <Field label={t("branch")}>
+              <select
+                className={inputClass}
+                value={values.branchId}
+                onChange={(e) => setValues((v) => ({ ...v, branchId: e.target.value }))}
+                required
+              >
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.nameEn}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label={t("role")}>
+              <select
+                className={inputClass}
+                value={values.role}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, role: e.target.value as "employee" | "admin" }))
+                }
+              >
+                <option value="employee">{t("roleEmployee")}</option>
+                <option value="admin">{t("roleAdmin")}</option>
+              </select>
+            </Field>
+
+            {!isEdit ? (
+              <div className="flex gap-2">
+                {(["pin", "password"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setValues((v) => ({ ...v, authType: type }))}
+                    className={cn(
+                      "min-h-11 flex-1 rounded-xl border text-sm font-medium transition-colors",
+                      values.authType === type
+                        ? "border-salon-gold bg-salon-gold/15 text-salon-black"
+                        : "border-salon-border bg-white text-salon-muted",
+                    )}
+                  >
+                    {type === "pin" ? t("authPin") : t("authPassword")}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-salon-muted">
+                {values.authType === "pin" ? t("authPin") : t("authPassword")}
+              </p>
+            )}
+
+            {values.authType === "pin" ? (
+              <Field label={isEdit ? t("resetPin") : t("pin")}>
                 <input
                   className={inputClass}
-                  value={values.username ?? ""}
-                  onChange={(e) => setValues((v) => ({ ...v, username: e.target.value }))}
-                  required={!isEdit}
-                />
-              </Field>
-              <Field label={isEdit ? t("resetPassword") : t("password")}>
-                <input
-                  className={inputClass}
-                  type="password"
-                  value={isEdit ? (values.resetPassword ?? "") : (values.password ?? "")}
+                  inputMode="numeric"
+                  pattern="\d{4,6}"
+                  value={isEdit ? (values.resetPin ?? "") : (values.pin ?? "")}
                   onChange={(e) =>
                     setValues((v) =>
-                      isEdit
-                        ? { ...v, resetPassword: e.target.value }
-                        : { ...v, password: e.target.value },
+                      isEdit ? { ...v, resetPin: e.target.value } : { ...v, pin: e.target.value },
                     )
                   }
                   required={!isEdit}
-                  placeholder={isEdit ? t("resetPasswordHint") : undefined}
+                  placeholder={isEdit ? t("resetPinHint") : undefined}
                 />
               </Field>
-            </>
-          )}
+            ) : (
+              <>
+                <Field label={t("username")}>
+                  <input
+                    className={inputClass}
+                    value={values.username ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, username: e.target.value }))}
+                    required={!isEdit}
+                  />
+                </Field>
+                <Field label={isEdit ? t("resetPassword") : t("password")}>
+                  <input
+                    className={inputClass}
+                    type="password"
+                    value={isEdit ? (values.resetPassword ?? "") : (values.password ?? "")}
+                    onChange={(e) =>
+                      setValues((v) =>
+                        isEdit
+                          ? { ...v, resetPassword: e.target.value }
+                          : { ...v, password: e.target.value },
+                      )
+                    }
+                    required={!isEdit}
+                    placeholder={isEdit ? t("resetPasswordHint") : undefined}
+                  />
+                </Field>
+              </>
+            )}
 
-          {isEdit ? (
-            <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-salon-border px-4">
-              <span className="text-sm font-medium text-salon-black">{t("active")}</span>
-              <input
-                type="checkbox"
-                checked={values.isActive}
-                onChange={(e) => setValues((v) => ({ ...v, isActive: e.target.checked }))}
-                className="size-5 accent-salon-gold"
-              />
-            </label>
-          ) : null}
+            {isEdit ? (
+              <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-salon-border px-4">
+                <span className="text-sm font-medium text-salon-black">{t("active")}</span>
+                <input
+                  type="checkbox"
+                  checked={values.isActive}
+                  onChange={(e) => setValues((v) => ({ ...v, isActive: e.target.checked }))}
+                  className="size-5 accent-salon-gold"
+                />
+              </label>
+            ) : null}
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="min-h-12 flex-1" onClick={onClose}>
-              {t("cancel")}
-            </Button>
-            <Button
-              type="submit"
-              disabled={pending}
-              className="min-h-12 flex-1 bg-salon-gold text-salon-black hover:bg-salon-gold/90"
-            >
-              {pending ? t("saving") : t("save")}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="min-h-12 flex-1" onClick={onClose}>
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={pending}
+                className="min-h-12 flex-1 bg-salon-gold text-salon-black hover:bg-salon-gold/90"
+              >
+                {pending ? t("saving") : t("save")}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

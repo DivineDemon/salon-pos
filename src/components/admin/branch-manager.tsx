@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useRouter } from "@/intl/navigation";
 import { createBranch, translateAdminError, updateBranch } from "@/lib/admin/actions";
 import type { AdminBranch } from "@/lib/admin/queries";
@@ -64,7 +65,7 @@ export function BranchManager({ branches, locale }: BranchManagerProps) {
       </ul>
 
       {mode.type !== "closed" ? (
-        <BranchFormSheet
+        <BranchFormDrawer
           mode={mode}
           pending={pending}
           error={error}
@@ -103,14 +104,14 @@ type BranchFormValues = {
   isActive: boolean;
 };
 
-function BranchFormSheet({
+function BranchFormDrawer({
   mode,
   pending,
   error,
   onClose,
   onSubmit,
 }: {
-  mode: FormMode;
+  mode: Exclude<FormMode, { type: "closed" }>;
   pending: boolean;
   error: string | null;
   onClose: () => void;
@@ -131,91 +132,91 @@ function BranchFormSheet({
   const [values, setValues] = useState(initial);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
-      >
-        <h2 className="font-display text-xl font-bold text-salon-black">
-          {isEdit ? t("editBranch") : t("addBranch")}
-        </h2>
+    <Drawer open onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent className="max-h-[90dvh] bg-white flex flex-col overflow-hidden data-[vaul-drawer-direction=bottom]:overflow-hidden">
+        <DrawerHeader className="px-6 pt-4 text-start shrink-0">
+          <DrawerTitle className="font-display text-xl font-bold text-salon-black">
+            {isEdit ? t("editBranch") : t("addBranch")}
+          </DrawerTitle>
+        </DrawerHeader>
 
-        <form
-          className="mt-4 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit({
-              nameEn: values.nameEn,
-              nameAr: values.nameAr,
-              address: values.address,
-              phone: values.phone,
-              isActive: values.isActive,
-            });
-          }}
-        >
-          <Field label={t("nameEn")}>
-            <input
-              className={inputClass}
-              value={values.nameEn}
-              onChange={(e) => setValues((v) => ({ ...v, nameEn: e.target.value }))}
-              required
-            />
-          </Field>
-          <Field label={t("nameAr")}>
-            <input
-              className={inputClass}
-              dir="rtl"
-              value={values.nameAr}
-              onChange={(e) => setValues((v) => ({ ...v, nameAr: e.target.value }))}
-              required
-            />
-          </Field>
-          <Field label={t("address")}>
-            <input
-              className={inputClass}
-              value={values.address}
-              onChange={(e) => setValues((v) => ({ ...v, address: e.target.value }))}
-            />
-          </Field>
-          <Field label={t("phone")}>
-            <input
-              className={inputClass}
-              type="tel"
-              value={values.phone}
-              onChange={(e) => setValues((v) => ({ ...v, phone: e.target.value }))}
-            />
-          </Field>
-
-          {isEdit ? (
-            <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-salon-border px-4">
-              <span className="text-sm font-medium text-salon-black">{t("active")}</span>
+        <div className="overflow-y-auto px-6 pb-6 flex-1 min-h-0">
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSubmit({
+                nameEn: values.nameEn,
+                nameAr: values.nameAr,
+                address: values.address,
+                phone: values.phone,
+                isActive: values.isActive,
+              });
+            }}
+          >
+            <Field label={t("nameEn")}>
               <input
-                type="checkbox"
-                checked={values.isActive}
-                onChange={(e) => setValues((v) => ({ ...v, isActive: e.target.checked }))}
-                className="size-5 accent-salon-gold"
+                className={inputClass}
+                value={values.nameEn}
+                onChange={(e) => setValues((v) => ({ ...v, nameEn: e.target.value }))}
+                required
               />
-            </label>
-          ) : null}
+            </Field>
+            <Field label={t("nameAr")}>
+              <input
+                className={inputClass}
+                dir="rtl"
+                value={values.nameAr}
+                onChange={(e) => setValues((v) => ({ ...v, nameAr: e.target.value }))}
+                required
+              />
+            </Field>
+            <Field label={t("address")}>
+              <input
+                className={inputClass}
+                value={values.address}
+                onChange={(e) => setValues((v) => ({ ...v, address: e.target.value }))}
+              />
+            </Field>
+            <Field label={t("phone")}>
+              <input
+                className={inputClass}
+                type="tel"
+                value={values.phone}
+                onChange={(e) => setValues((v) => ({ ...v, phone: e.target.value }))}
+              />
+            </Field>
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {isEdit ? (
+              <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-salon-border px-4">
+                <span className="text-sm font-medium text-salon-black">{t("active")}</span>
+                <input
+                  type="checkbox"
+                  checked={values.isActive}
+                  onChange={(e) => setValues((v) => ({ ...v, isActive: e.target.checked }))}
+                  className="size-5 accent-salon-gold"
+                />
+              </label>
+            ) : null}
 
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="min-h-12 flex-1" onClick={onClose}>
-              {t("cancel")}
-            </Button>
-            <Button
-              type="submit"
-              disabled={pending}
-              className="min-h-12 flex-1 bg-salon-gold text-salon-black hover:bg-salon-gold/90"
-            >
-              {pending ? t("saving") : t("save")}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="min-h-12 flex-1" onClick={onClose}>
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={pending}
+                className="min-h-12 flex-1 bg-salon-gold text-salon-black hover:bg-salon-gold/90"
+              >
+                {pending ? t("saving") : t("save")}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

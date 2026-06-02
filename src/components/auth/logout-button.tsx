@@ -11,7 +11,7 @@ export function LogoutButton() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
+    router.replace("/");
     router.refresh();
   }
 
@@ -20,11 +20,10 @@ export function LogoutButton() {
       type="button"
       variant="outline"
       size="icon"
-      className="min-h-touch min-w-touch"
       onClick={handleLogout}
       aria-label={t("logout")}
     >
-      <LogOut className="size-4" />
+      <LogOut />
     </Button>
   );
 }

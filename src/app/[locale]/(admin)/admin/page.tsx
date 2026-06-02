@@ -1,7 +1,5 @@
 import { ChevronRight } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { LogoutButton } from "@/components/auth/logout-button";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { Link } from "@/intl/navigation";
 import { cn } from "@/lib/utils";
 
@@ -23,16 +21,10 @@ export default async function AdminDashboardPage({ params }: Props) {
   ];
 
   return (
-    <main className="flex min-h-dvh flex-col px-6 py-8">
-      <header className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-salon-black">{t("homeTitle")}</h1>
-          <p className="mt-1 text-sm text-salon-muted">{t("homeSubtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          <LogoutButton />
-        </div>
+    <main className="flex min-h-0 flex-1 flex-col px-6 py-8">
+      <header className="mb-8">
+        <h1 className="font-display text-2xl font-bold text-salon-black">{t("homeTitle")}</h1>
+        <p className="mt-1 text-sm text-salon-muted">{t("homeSubtitle")}</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">

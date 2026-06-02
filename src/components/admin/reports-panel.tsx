@@ -1,24 +1,41 @@
 "use client";
 
+import { Building2, CalendarDays, ChevronDownIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import type { DateRange as DayPickerRange } from "react-day-picker";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter } from "@/intl/navigation";
 import type { Locale } from "@/intl/routing";
+import {
+  formatMuscatDateParam,
+  REPORT_TIMEZONE,
+  resolveReportDateRange,
+  startOfTodayMuscat,
+} from "@/lib/admin/date-range";
 import type { AdminBranch } from "@/lib/admin/queries";
 import type { ReportData } from "@/lib/admin/reports";
 import { formatOMR } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 export type ReportTab = "sales" | "revenue" | "expenses";
-export type ReportRange = "today" | "week" | "custom";
 
 type ReportsPanelProps = {
   branches: AdminBranch[];
   data: ReportData;
   locale: Locale;
   branchId: string | null;
-  range: ReportRange;
-  customFrom: string;
-  customTo: string;
+  from: string;
+  to: string;
   tab: ReportTab;
 };
 
@@ -27,9 +44,8 @@ export function ReportsPanel({
   data,
   locale,
   branchId,
-  range,
-  customFrom,
-  customTo,
+  from,
+  to,
   tab,
 }: ReportsPanelProps) {
   const t = useTranslations("admin.reports");
@@ -40,9 +56,8 @@ export function ReportsPanel({
     const params = new URLSearchParams();
     const merged: Record<string, string | undefined> = {
       branch: branchId ?? undefined,
-      range,
-      from: customFrom || undefined,
-      to: customTo || undefined,
+      from: from || undefined,
+      to: to || undefined,
       tab,
       ...patch,
     };
@@ -53,6 +68,15 @@ export function ReportsPanel({
   }
 
   const branchLabel = (branch: AdminBranch) => (locale === "ar" ? branch.nameAr : branch.nameEn);
+
+  const selectedBranch =
+    branchId != null ? branches.find((branch) => branch.id === branchId) : null;
+
+  const resolvedRange = resolveReportDateRange(from || undefined, to || undefined);
+  const calendarRange: DayPickerRange = {
+    from: resolvedRange.from,
+    to: resolvedRange.to,
+  };
 
   const netRevenue = data.revenueTotal - data.expensesTotal;
 
@@ -66,137 +90,133 @@ export function ReportsPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap gap-2">
-        <FilterChip
-          active={!branchId}
-          label={t("allBranches")}
-          onClick={() => updateParams({ branch: undefined })}
-        />
-        {branches.map((branch) => (
-          <FilterChip
-            key={branch.id}
-            active={branchId === branch.id}
-            label={branchLabel(branch)}
-            onClick={() => updateParams({ branch: branch.id })}
-          />
-        ))}
-      </div>
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 gap-2 border-salon-border bg-white font-normal text-salon-black hover:bg-salon-cream/50"
+            >
+              <Building2 className="size-4 text-salon-muted" />
+              <span className="max-w-40 truncate">
+                {selectedBranch ? branchLabel(selectedBranch) : t("allBranches")}
+              </span>
+              <ChevronDownIcon className="size-4 text-salon-muted" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-64 min-w-48 overflow-y-auto">
+            <DropdownMenuRadioGroup
+              value={branchId ?? "all"}
+              onValueChange={(value) =>
+                updateParams({ branch: value === "all" ? undefined : value })
+              }
+            >
+              <DropdownMenuRadioItem value="all">{t("allBranches")}</DropdownMenuRadioItem>
+              {branches.map((branch) => (
+                <DropdownMenuRadioItem key={branch.id} value={branch.id}>
+                  {branchLabel(branch)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <div className="flex flex-wrap gap-2">
-        {(["today", "week", "custom"] as const).map((preset) => (
-          <FilterChip
-            key={preset}
-            active={range === preset}
-            label={t(`range_${preset}`)}
-            onClick={() => updateParams({ range: preset })}
-          />
-        ))}
-      </div>
-
-      {range === "custom" ? (
-        <div className="flex flex-wrap gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-salon-black">{t("from")}</span>
-            <input
-              type="date"
-              className={dateInputClass}
-              value={customFrom}
-              onChange={(e) => updateParams({ from: e.target.value })}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 gap-2 border-salon-border bg-white font-normal text-salon-black hover:bg-salon-cream/50"
+            >
+              <CalendarDays className="size-4 text-salon-muted" />
+              <span className="max-w-48 truncate">{formatRangeLabel(resolvedRange, locale)}</span>
+              <ChevronDownIcon className="size-4 text-salon-muted" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" collisionPadding={16} className="w-auto p-0">
+            <Calendar
+              mode="range"
+              timeZone={REPORT_TIMEZONE}
+              defaultMonth={resolvedRange.from}
+              selected={calendarRange}
+              onSelect={(selected) => {
+                if (!selected?.from) return;
+                updateParams({
+                  from: formatMuscatDateParam(selected.from),
+                  to: selected.to ? formatMuscatDateParam(selected.to) : undefined,
+                });
+              }}
+              disabled={{ after: startOfTodayMuscat() }}
+              className="p-2"
             />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-salon-black">{t("to")}</span>
-            <input
-              type="date"
-              className={dateInputClass}
-              value={customTo}
-              onChange={(e) => updateParams({ to: e.target.value })}
-            />
-          </label>
-        </div>
-      ) : null}
-
-      <div className="flex gap-2 border-b border-salon-border">
-        {(["sales", "revenue", "expenses"] as const).map((tabKey) => (
-          <button
-            key={tabKey}
-            type="button"
-            onClick={() => updateParams({ tab: tabKey })}
-            className={cn(
-              "min-h-11 flex-1 border-b-2 px-2 text-sm font-medium transition-colors",
-              tab === tabKey
-                ? "border-salon-gold text-salon-black"
-                : "border-transparent text-salon-muted",
-            )}
-          >
-            {t(`tab_${tabKey}`)}
-          </button>
-        ))}
+          </PopoverContent>
+        </Popover>
       </div>
 
-      {tab === "sales" ? (
-        <ReportList
-          empty={t("noData")}
-          rows={data.salesByEmployee.map((row) => ({
-            id: row.employeeId,
-            title: row.employeeName,
-            subtitle: t("salesCount", { count: row.saleCount }),
-            amount: formatOMR(row.revenueTotal, locale),
-          }))}
-        />
-      ) : null}
+      <Tabs value={tab} onValueChange={(value) => updateParams({ tab: value as ReportTab })}>
+        <TabsList variant="line" className="w-full grid grid-cols-3">
+          {(["sales", "revenue", "expenses"] as const).map((tabKey) => (
+            <TabsTrigger
+              key={tabKey}
+              value={tabKey}
+              className="w-full data-active:text-salon-black data-active:after:bg-salon-gold"
+            >
+              {t(`tab_${tabKey}`)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {tab === "revenue" ? (
-        <div className="flex flex-col gap-3">
-          <SummaryCard label={t("totalRevenue")} value={formatOMR(data.revenueTotal, locale)} />
-          <SummaryCard label={t("saleCount")} value={String(data.saleCount)} highlight={false} />
-          <SummaryCard label={t("totalExpenses")} value={formatOMR(data.expensesTotal, locale)} />
-          <SummaryCard
-            label={t("netRevenue")}
-            value={formatOMR(netRevenue, locale)}
-            highlight={netRevenue >= 0}
+        <TabsContent value="sales">
+          <ReportList
+            empty={t("noData")}
+            rows={data.salesByEmployee.map((row) => ({
+              id: row.employeeId,
+              title: row.employeeName,
+              subtitle: t("salesCount", { count: row.saleCount }),
+              amount: formatOMR(row.revenueTotal, locale),
+            }))}
           />
-        </div>
-      ) : null}
+        </TabsContent>
 
-      {tab === "expenses" ? (
-        <ReportList
-          empty={t("noData")}
-          rows={data.expensesByCategory.map((row) => ({
-            id: row.category,
-            title: expenseCategoryLabel(row.category),
-            subtitle: t("expenseCount", { count: row.count }),
-            amount: formatOMR(row.total, locale),
-          }))}
-        />
-      ) : null}
+        <TabsContent value="revenue">
+          <div className="flex flex-col gap-3">
+            <SummaryCard label={t("totalRevenue")} value={formatOMR(data.revenueTotal, locale)} />
+            <SummaryCard label={t("saleCount")} value={String(data.saleCount)} highlight={false} />
+            <SummaryCard label={t("totalExpenses")} value={formatOMR(data.expensesTotal, locale)} />
+            <SummaryCard
+              label={t("netRevenue")}
+              value={formatOMR(netRevenue, locale)}
+              highlight={netRevenue >= 0}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="expenses">
+          <ReportList
+            empty={t("noData")}
+            rows={data.expensesByCategory.map((row) => ({
+              id: row.category,
+              title: expenseCategoryLabel(row.category),
+              subtitle: t("expenseCount", { count: row.count }),
+              amount: formatOMR(row.total, locale),
+            }))}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-function FilterChip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "min-h-10 rounded-full border px-4 text-sm font-medium transition-colors",
-        active
-          ? "border-salon-gold bg-salon-gold/15 text-salon-black"
-          : "border-salon-border bg-white text-salon-muted",
-      )}
-    >
-      {label}
-    </button>
-  );
+function formatRangeLabel(resolvedRange: { from: Date; to: Date }, locale: Locale): string {
+  const formatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-OM", {
+    timeZone: REPORT_TIMEZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return `${formatter.format(resolvedRange.from)} – ${formatter.format(resolvedRange.to)}`;
 }
 
 function SummaryCard({
@@ -251,7 +271,3 @@ function ReportList({
     </ul>
   );
 }
-
-const dateInputClass = cn(
-  "min-h-11 rounded-xl border border-salon-border bg-white px-3 text-salon-black outline-none focus-visible:border-salon-gold",
-);

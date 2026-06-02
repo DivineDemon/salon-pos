@@ -31,7 +31,7 @@ export function isAdminProtectedPath(path: string): boolean {
 }
 
 export function loginPathForScope(scope: "employee" | "admin"): string {
-  return scope === "admin" ? "/admin/login" : "/login";
+  return scope === "admin" ? "/admin/login" : "/";
 }
 
 export function homePathForRole(role: "employee" | "admin"): string {
