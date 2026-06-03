@@ -29,7 +29,8 @@
     "react-dom": "^19.2.7",
     "shadcn": "^4.10.0",
     "tailwind-merge": "^3.6.0",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
